@@ -1,0 +1,17 @@
+{
+  "model_type": "two_tower",
+  "version": "bgg-two-tower-v1",
+  "schema_version": 1,
+  "trained_at": "2026-05-05T00:00:00Z",
+  "files": {
+    "item_embeddings.npy": {},
+    "games_meta.parquet": {},
+    "two_tower.pt": {},
+    "categories.json": {},
+    "game_enc.pkl": {},
+    "onboarding_games.parquet": {},
+    "encoders.pkl": {}
+  },
+  "trained_by": "export",
+  "framework": "numpy"
+}

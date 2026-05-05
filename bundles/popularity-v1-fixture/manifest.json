@@ -1,0 +1,11 @@
+{
+  "model_type": "popularity",
+  "version": "v1.0.0-fixture",
+  "schema_version": 1,
+  "trained_at": "2026-05-05T00:00:00Z",
+  "files": {
+    "games_meta.parquet": {}
+  },
+  "trained_by": "fixture",
+  "framework": "numpy"
+}

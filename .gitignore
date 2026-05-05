@@ -1,0 +1,66 @@
+# --- Environment & secrets ---
+.env
+.env.*
+!.env.example
+*.pem
+secrets/
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.venv/
+venv/
+env/
+
+# Packaging / build
+dist/
+build/
+*.egg
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+wheels/
+
+# --- Test / coverage / typecheck / lint ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.nox/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- Logs & local DB dumps ---
+*.log
+*.sqlite3
+*.db
+
+# --- Model bundles ---
+# Large .npy / .parquet under bundles/ are tracked with Git LFS (.gitattributes).
+
+# --- Docker / runtime overrides ---
+docker-compose.override.yml
+
+# --- IDE & editors ---
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+Desktop.ini
