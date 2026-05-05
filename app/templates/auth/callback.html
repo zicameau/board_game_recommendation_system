@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Signing you in{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Completing sign-in</h1>
+  <p id="msg" class="muted">Processing tokens from the redirect…</p>
+  <p id="err" class="error" style="display:none"></p>
+</div>
+<script>
+(function () {
+  const msg = document.getElementById("msg");
+  const err = document.getElementById("err");
+  function showError(t) {
+    msg.style.display = "none";
+    err.style.display = "block";
+    err.textContent = t;
+  }
+  const raw = window.location.hash;
+  if (!raw || raw.length < 2) {
+    showError("No #fragment on this URL. Use the confirmation link from your Supabase email (redirect must hit this app on port 8000, not 3000).");
+    return;
+  }
+  const params = new URLSearchParams(raw.startsWith("#") ? raw.substring(1) : raw);
+  const qerr = params.get("error") || params.get("error_description");
+  if (qerr) { showError(qerr); return; }
+  const access = params.get("access_token");
+  const refresh = params.get("refresh_token");
+  const exp = parseInt(params.get("expires_in") || "3600", 10);
+  if (!access || !refresh) {
+    showError("Missing access_token or refresh_token in the URL hash.");
+    return;
+  }
+  msg.textContent = "Setting session cookies…";
+  fetch("/auth/set-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ access_token: access, refresh_token: refresh, expires_in: exp }),
+    credentials: "same-origin",
+  })
+    .then(async (r) => {
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) {
+        showError(data.detail || data.error || r.statusText || "Could not create session");
+        return;
+      }
+      if (data.redirect) {
+        window.location.href = data.redirect;
+        return;
+      }
+      window.location.href = "/onboarding/welcome";
+    })
+    .catch((e) => showError(String(e)));
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Your recommendations{% endblock %}
+{% block content %}
+<div class="card card--flush">
+  <h1>Next ten for you</h1>
+  <p class="muted">
+    Serving <strong>{{ model_type }}</strong> · bundle <strong>{{ model_version }}</strong>.
+    Match scores are normalized across this list (best = 100% / 10). “Why” lines combine your onboarding picks with game metadata.
+  </p>
+  {% if items|length == 0 %}
+  <p>No items resolved — extend your bundle parquet or regenerate indices.</p>
+  {% else %}
+  <div class="rec-list">
+    {% for it in items %}
+    <article class="rec-card">
+      <div class="rec-card__media">
+        {% if it.thumbnail_url %}
+        <img
+          class="rec-card__img"
+          src="{{ it.thumbnail_url }}"
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+        />
+        {% else %}
+        <div class="rec-card__ph" aria-hidden="true">{{ (it.title or "?")[:1] }}</div>
+        {% endif %}
+      </div>
+      <div class="rec-card__body">
+        <div class="rec-card__head">
+          <h2 class="rec-card__title">
+            <a href="https://boardgamegeek.com/boardgame/{{ it.bgg_id }}" target="_blank" rel="noreferrer">{{ it.title }}</a>
+            <span class="muted rec-card__idx">#{{ it.game_idx }}</span>
+          </h2>
+          <div class="rec-card__scores" title="Relative match within this top-10 (not an absolute global score)">
+            <span class="rec-card__pct">{{ it.match_pct }}%</span>
+            <span class="rec-card__ten">{{ it.match_10 }}<span class="muted">/10</span></span>
+          </div>
+        </div>
+        {% if it.description %}
+        <p class="rec-card__desc">{{ it.description }}</p>
+        {% else %}
+        <p class="rec-card__desc rec-card__desc--empty muted">No description in the model bundle for this title.</p>
+        {% endif %}
+        <p class="rec-card__why"><span class="rec-card__why-label">Why we think you’ll like it</span> {{ it.why }}</p>
+        <p class="rec-card__meta muted">
+          <a href="https://boardgamegeek.com/boardgame/{{ it.bgg_id }}" target="_blank" rel="noreferrer">BGG {{ it.bgg_id }}</a>
+        </p>
+      </div>
+    </article>
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Play context{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Who you play with most</h1>
+  <p class="muted" style="margin-bottom: 0.5rem; line-height: 1.55">
+    We use this to frame recommendations later (e.g., lighter games for mixed groups, weight for regular groups).
+    Everything here is optional.
+  </p>
+
+  <form method="post" action="/onboarding/play_context" autocomplete="off">
+    <fieldset class="play-context-fieldset">
+      <legend class="chip-section-title">Typical group</legend>
+      <div class="chip-wall" style="max-height: none">
+        <div class="chip-strip" role="radiogroup" aria-label="Who you usually play with">
+          <label class="chip-radio">
+            <input
+              type="radio"
+              name="play_context_preset"
+              value=""
+              {% if play_context_preset == '' and play_context_detail == '' %}checked{% endif %}
+            />
+            <span>No preference</span>
+          </label>
+          {% for opt in play_context_options %}
+          <label class="chip-radio">
+            <input
+              type="radio"
+              name="play_context_preset"
+              value="{{ opt|e }}"
+              {% if play_context_preset == opt %}checked{% endif %}
+            />
+            <span>{{ opt }}</span>
+          </label>
+          {% endfor %}
+          <label class="chip-radio">
+            <input
+              type="radio"
+              name="play_context_preset"
+              value="{{ play_context_other_value|e }}"
+              {% if play_context_preset == play_context_other_value %}checked{% endif %}
+            />
+            <span>Something else</span>
+          </label>
+        </div>
+      </div>
+    </fieldset>
+
+    <label class="field" for="play_context_detail">Anything else? (optional)</label>
+    <input
+      id="play_context_detail"
+      name="play_context_detail"
+      type="text"
+      maxlength="64"
+      value="{{ play_context_detail }}"
+      placeholder="Short note — combined with your choice above, max 64 characters stored."
+    />
+    <p class="muted" style="font-size:0.8rem;margin-top:0.35rem">Stored as plain text (max 64 characters total including your chip choice).</p>
+
+    <p style="margin-top:1.25rem">
+      <button type="submit">Next</button>
+      <button type="button" class="secondary" onclick="location.href='/onboarding/complexity'">Back</button>
+    </p>
+  </form>
+</div>
+{% endblock %}

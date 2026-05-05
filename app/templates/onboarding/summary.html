@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Review{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Almost there</h1>
+  <p class="muted">Submitting computes your embedding (<code>{{ sel.model_version }}</code>) via the active recommender bundle.</p>
+  <dl>
+    <dt class="muted">Ratings captured</dt>
+    <dd>{{ sel.game_ratings|length }}</dd>
+    <dt class="muted">Liked categories</dt>
+    <dd>{{ sel.liked_categories }}</dd>
+    <dt class="muted">Mechanics likes</dt>
+    <dd>{{ sel.liked_mechanics }}</dd>
+    <dt class="muted">Complexity</dt>
+    <dd>{{ sel.complexity_pref or "—" }}</dd>
+    <dt class="muted">Play context</dt>
+    <dd>{{ sel.play_context or "—" }}</dd>
+    <dt class="muted">Player profile</dt>
+    <dd>{{ sel.player_profile or "—" }}</dd>
+  </dl>
+  <form method="post" action="/onboarding/complete" style="margin-top: 1rem">
+    <button type="submit">Finish onboarding</button>
+    <button type="button" class="secondary" onclick="location.href='/onboarding/player_profile'">Back</button>
+  </form>
+</div>
+<style>
+dl { margin: 0 0 1rem; display: grid; gap: .35rem calc(1vw + .5rem); grid-template-columns: minmax(8rem,max-content) 1fr;}
+dt {margin: 0;color:var(--muted);font-size:.85rem;text-transform:uppercase;letter-spacing:.04em}
+dd {margin: 0;font-weight:600}
+</style>
+{% endblock %}

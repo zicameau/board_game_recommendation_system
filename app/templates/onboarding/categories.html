@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Categories{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Categories</h1>
+  <p class="muted">Tap a chip to append that label to the right list (comma-separated). Options come from your model bundle (<code>categories.json</code> or game metadata).</p>
+
+  <h3 class="chip-section-title">Add to <span class="accent">liked</span></h3>
+  <div class="chip-wall" aria-label="Liked category suggestions">
+    <div class="chip-strip">
+      {% for p in category_options %}
+      <button type="button" class="chip chip-liked" data-label="{{ p|e }}">+ liked · {{ p }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <h3 class="chip-section-title">Add to <span class="accent-danger">disliked</span></h3>
+  <div class="chip-wall" aria-label="Disliked category suggestions">
+    <div class="chip-strip">
+      {% for p in category_options %}
+      <button type="button" class="chip chip-disliked" data-label="{{ p|e }}">+ disliked · {{ p }}</button>
+      {% endfor %}
+    </div>
+  </div>
+
+  <form method="post" action="/onboarding/categories">
+    <label class="field" for="liked_categories">Liked categories</label>
+    <input id="liked_categories" name="liked_categories" type="text" value="{{ liked }}" autocomplete="off" />
+    <label class="field" for="disliked_categories">Disliked categories</label>
+    <input id="disliked_categories" name="disliked_categories" type="text" value="{{ disliked }}" autocomplete="off" />
+    <p style="margin-top:1.25rem">
+      <button type="submit">Next</button>
+      <button type="button" class="secondary" onclick="location.href='/onboarding/seed_ratings'">Back</button>
+    </p>
+  </form>
+</div>
+<script>
+function mergeListField(id, label) {
+  const el = document.getElementById(id);
+  const parts = el.value.split(",").map(s => s.trim()).filter(Boolean);
+  if (!parts.includes(label)) parts.push(label);
+  el.value = parts.join(", ");
+}
+document.querySelectorAll(".chip-liked").forEach((btn) => {
+  btn.addEventListener("click", () => mergeListField("liked_categories", btn.getAttribute("data-label")));
+});
+document.querySelectorAll(".chip-disliked").forEach((btn) => {
+  btn.addEventListener("click", () => mergeListField("disliked_categories", btn.getAttribute("data-label")));
+});
+</script>
+{% endblock %}

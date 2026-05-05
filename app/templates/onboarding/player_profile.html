@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Player profile{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Optional player archetype tag</h1>
+  <p class="muted" style="margin-bottom:1rem;line-height:1.55">
+    Shown on your summary only for now; helps you recognize this profile later. Max 64 characters.
+  </p>
+  <form method="post" action="/onboarding/player_profile">
+    <label class="field" for="player_profile">How you introduce yourself at the table (short)</label>
+    <input id="player_profile" name="player_profile" type="text" maxlength="64" autocomplete="off" value="{{ current }}" placeholder="e.g. rules lawyer, social gamer" />
+    <p style="margin-top:1.25rem">
+      <button type="submit">Next</button>
+      <button type="button" class="secondary" onclick="location.href='/onboarding/play_context'">Back</button>
+    </p>
+  </form>
+</div>
+{% endblock %}

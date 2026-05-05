@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Seed ratings{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Seed ratings</h1>
+  <p class="muted">
+    Rate each onboarding game (<strong>never played</strong> skips it). The same <strong>10</strong> popular,
+    category-spread titles are shown to everyone for this model version (picked deterministically from
+    <code>games_meta.parquet</code>).
+  </p>
+  <form method="post" action="/onboarding/seed_ratings">
+    {% if games|length == 0 %}
+    <p class="error">
+      Bundle has no games_meta rows — check <code>MODEL_BUNDLE_PATH</code> / <code>MODEL_VERSION</code>.
+    </p>
+    {% endif %}
+    {% for g in games %}
+    <section class="seed-game" aria-labelledby="title-{{ g.game_idx }}">
+      {% if g.thumbnail %}
+      <div class="seed-game__media">
+        <img
+          class="seed-game__thumb"
+          src="{{ g.thumbnail }}"
+          alt=""
+          loading="lazy"
+          width="160"
+          height="160"
+          decoding="async"
+          referrerpolicy="no-referrer"
+          onerror="this.closest('.seed-game__media').classList.add('seed-game__media--hide')"
+        />
+      </div>
+      {% endif %}
+      <div class="seed-game__body">
+        <h2 id="title-{{ g.game_idx }}">{{ g.title }} <span class="muted">· BGG {{ g.bgg_id }} · idx {{ g.game_idx }}</span></h2>
+        {% if g.description %}
+        <p class="seed-game__desc">{{ g.description }}</p>
+        {% endif %}
+        <div class="rating-matrix">
+          {% set cur = existing.get(g.game_idx, 'never_played') %}
+          {% for lbl in ["love", "like", "never_played", "dislike", "hate"] %}
+          <label>
+            <input type="radio" name="label_{{ g.game_idx }}" value="{{ lbl }}" {% if cur == lbl %}checked{% endif %} />
+            {{ lbl.replace('_', ' ')|capitalize }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+    {% endfor %}
+    <p style="margin-top:1.75rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+      <button type="submit">Save &amp; next</button>
+      <button type="button" class="secondary" onclick="location.href='/onboarding/welcome'">Back</button>
+    </p>
+  </form>
+</div>
+{% endblock %}

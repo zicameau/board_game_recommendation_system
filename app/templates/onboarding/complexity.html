@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Complexity{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Preferred complexity</h1>
+  <form method="post" action="/onboarding/complexity">
+    {% set cur = current or 'medium' %}
+    <label class="field" for="complexity_pref">Level</label>
+    <select id="complexity_pref" name="complexity_pref">
+      {% for choice in ["light", "medium", "heavy"] %}
+      <option value="{{ choice }}" {% if cur == choice %}selected{% endif %}>{{ choice|capitalize }}</option>
+      {% endfor %}
+      <option value="variable" {% if cur == 'variable' %}selected{% endif %}>Varies per night</option>
+    </select>
+    <p style="margin-top:1.25rem">
+      <button type="submit">Next</button>
+      <button type="button" class="secondary" onclick="location.href='/onboarding/mechanics'">Back</button>
+    </p>
+  </form>
+</div>
+{% endblock %}

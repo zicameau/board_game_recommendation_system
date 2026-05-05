@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Onboarding · Welcome{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Let’s personalize your picks</h1>
+  <p class="muted">Seven quick steps capture how you think about games. Data is stored against your profile for recommendations.</p>
+  <ul class="onboarding-steps">
+    <li>Seed ratings on a curated tray</li>
+    <li>Category &amp; mechanic signals</li>
+    <li>Complexity &amp; who you usually play with</li>
+    <li>Quick summary → fit embedding</li>
+  </ul>
+  <form method="get" action="/onboarding/seed_ratings"><button type="submit">Continue</button></form>
+</div>
+{% endblock %}

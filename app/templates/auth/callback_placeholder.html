@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Auth callback{% endblock %}
+{% block content %}
+<div class="card">
+  <h1>Email confirmation redirect</h1>
+  <p class="muted">
+    Configure this URL (<code>{{ request.url.scheme }}://{{ request.url.netloc }}/auth/callback</code>)
+    under Supabase Auth redirect URLs (<strong>§7.5.3</strong>). After confirmation, Supabase redirects here; Phase 1
+    leaves UX as informational — sessions are minted via <a href="/login">log in</a>.
+  </p>
+</div>
+{% endblock %}

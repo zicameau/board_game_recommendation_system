@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}BGG Recommender{% endblock %}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,600;0,700&display=swap" />
+    <link rel="stylesheet" href="/static/css/app.css" />
+    {% block head %}{% endblock %}
+  </head>
+  <body>
+    <div class="layout">
+      <header class="site">
+        <a href="/" class="brand">BGG Rec · Phase&nbsp;1</a>
+        <nav>
+          {% if viewer %}
+          <span class="muted">{{ viewer.username }}</span>
+          {% if viewer.onboarding_completed_at %}
+          <a href="/home">Recommendations</a>
+          {% else %}
+          <a href="/onboarding/welcome">Onboarding</a>
+          {% endif %}
+          <form class="inline-form" method="post" action="/logout">
+            <button type="submit" class="secondary">Log out</button>
+          </form>
+          {% else %}
+          <a href="/login">Log in</a>
+          <a href="/register">Register</a>
+          {% endif %}
+        </nav>
+      </header>
+      {% block content %}{% endblock %}
+    </div>
+  </body>
+</html>
