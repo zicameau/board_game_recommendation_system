@@ -1,0 +1,53 @@
+# Production stack: app (FastAPI), Caddy (TLS reverse proxy), one-shot migrate helper.
+#
+# Prerequisites on the VPS: copy `.env.deploy.example` to `.env.deploy` and `.env.example` workflow to `.env.production`.
+# Authenticate GHCR pull: docker login ghcr.io -u USER -p TOKEN
+#
+# Deploy:
+#   docker compose --env-file .env.deploy pull
+#   docker compose --env-file .env.deploy run --rm migrate
+#   docker compose --env-file .env.deploy up -d
+
+services:
+  app:
+    image: ${BGG_REC_IMAGE:?Set BGG_REC_IMAGE to your GHCR image, e.g. ghcr.io/org/bgg-rec-sys:main}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    expose:
+      - "8000"
+    networks:
+      - edge
+
+  migrate:
+    image: ${BGG_REC_IMAGE:?}
+    env_file:
+      - .env.production
+    networks:
+      - edge
+    entrypoint: []
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    depends_on:
+      - app
+
+networks:
+  edge:
+    name: bgg_rec_edge
+
+volumes:
+  caddy_data:
+  caddy_config:

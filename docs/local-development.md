@@ -2,7 +2,7 @@
 
 This guide covers running the BGG recommender app on your machine: database, Python environment, configuration files, and optional auth modes.
 
-## Prerequisites
+For **production** (boardlore.com, GHCR, SSH deploy, Caddy), see [production.md](production.md).
 
 - **Python** 3.11 or newer  
 - **Git** and **Git LFS** (for `bundles/**/*.npy` and `bundles/**/*.parquet` tracked in-repo; run `git lfs install` once per clone, then `git lfs pull` if large files show as pointers)  

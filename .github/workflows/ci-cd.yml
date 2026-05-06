@@ -1,0 +1,116 @@
+name: CI and deploy
+
+# Builds and deploys whenever `main` is updated:
+# - Direct git push to `main`
+# - Merging a PR into `main` (GitHub sends a `push` event with ref `refs/heads/main`)
+# - Manual "Run workflow" on branch `main` (`workflow_dispatch`)
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+
+  build:
+    needs: test
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_name: ${{ steps.meta.outputs.image_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - id: meta
+        run: |
+          echo "image_name=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+
+      - id: bundle
+        run: |
+          V="${{ vars.MODEL_VERSION }}"
+          if [ -z "$V" ]; then V="popularity-v1-fixture"; fi
+          echo "model_version=$V" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image_name }}:main
+            ${{ steps.meta.outputs.image_name }}:${{ github.sha }}
+          build-args: |
+            MODEL_VERSION=${{ steps.bundle.outputs.model_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: SCP compose and proxy config
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "docker-compose.prod.yml,deploy/"
+          target: /opt/bgg-rec-sys/
+          strip_components: 0
+          overwrite: true
+
+      - name: Remote pull, migrate, restart
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          BGG_REC_IMAGE: ${{ needs.build.outputs.image_name }}:main
+          GHCR_USER: ${{ secrets.GHCR_PULL_USER }}
+          GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: BGG_REC_IMAGE,GHCR_USER,GHCR_TOKEN
+          script: |
+            set -euo pipefail
+            mkdir -p /opt/bgg-rec-sys
+            cd /opt/bgg-rec-sys
+            if [ ! -f .env.production ]; then
+              echo "Missing /opt/bgg-rec-sys/.env.production — create it on the server first (see docs/production.md)."
+              exit 1
+            fi
+            printf 'BGG_REC_IMAGE=%s\n' "$BGG_REC_IMAGE" > .env.deploy
+            if [ -n "${GHCR_TOKEN:-}" ] && [ -n "${GHCR_USER:-}" ]; then
+              echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            fi
+            docker compose -f docker-compose.prod.yml --env-file .env.deploy pull
+            docker compose -f docker-compose.prod.yml --env-file .env.deploy run --rm migrate
+            docker compose -f docker-compose.prod.yml --env-file .env.deploy up -d
+            docker image prune -f || true

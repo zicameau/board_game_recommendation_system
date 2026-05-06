@@ -1,0 +1,11 @@
+# TLS at origin (boardlore.com). For Cloudflare "Full (strict)", keep certificates valid here.
+# Replace the email (Let's Encrypt registration contact).
+
+{
+	email CHANGE_ME_EMAIL@boardlore.com
+}
+
+boardlore.com, www.boardlore.com {
+	encode gzip
+	reverse_proxy app:8000
+}
