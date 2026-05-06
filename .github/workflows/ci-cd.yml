@@ -17,7 +17,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      # Real .parquet / .npy under bundles/ (otherwise LFS pointers break pytest imports)
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ env.PYTHON_VERSION }}
