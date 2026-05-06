@@ -4,6 +4,7 @@
 
 set -euo pipefail
 
+export DEBIAN_FRONTEND=noninteractive
 APP_DIR="${APP_DIR:-/opt/bgg-rec-sys}"
 
 apt-get update
