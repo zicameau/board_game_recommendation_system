@@ -21,8 +21,17 @@ Later: enable **orange cloud**, then **SSL/TLS → Full (strict)** once the drop
 
 ## 3. First-time VPS setup
 
+**CI deploy runs `docker compose` on the server.** If GitHub Actions fails with `docker: command not found`, Docker Engine is not installed yet — run bootstrap **once** as **root** (no clone required):
+
 ```bash
-# As root once (review script first)
+curl -fsSL https://raw.githubusercontent.com/OWNER/REPO/main/deploy/scripts/vps-bootstrap.sh | bash
+```
+
+Replace **`OWNER/REPO`** with your GitHub path (e.g. `zicameau/board_game_recommendation_system`). Review the script in the repo before piping to `bash`.
+
+If you already have the repo on the machine:
+
+```bash
 sudo bash deploy/scripts/vps-bootstrap.sh
 ```
 
@@ -106,6 +115,7 @@ Run **`docker compose -f docker-compose.prod.yml … run --rm migrate`** again o
 ## 9. Troubleshooting
 
 - **Compose: missing `.env.production`** → create it before the first CI deploy succeeds.
+- **Deploy: `docker: command not found`** → run [§3 First-time VPS setup](#3-first-time-vps-setup) bootstrap on the droplet (Docker Engine + compose plugin), then re-run the workflow.
 - **Pull denied** → **`docker login ghcr.io`** with PAT (**`GHCR_PULL_*`** in CI).
 - **Certificate failures behind Cloudflare** → origin must expose valid HTTPS for **Full (strict)** (Caddy obtains certs automatically when **80** is reachable on the apex names).
 - **Wrong model / bundle** → mismatch between baked **`MODEL_VERSION`** in CI and **`MODEL_VERSION`/`MODEL_BUNDLE_PATH`** in `.env.production`.

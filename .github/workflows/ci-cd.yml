@@ -103,6 +103,12 @@ jobs:
           envs: BGG_REC_IMAGE,GHCR_USER,GHCR_TOKEN
           script: |
             set -euo pipefail
+            export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            if ! command -v docker >/dev/null 2>&1; then
+              echo "Docker is not installed (or not on PATH). As root on the VPS, run the one-time bootstrap:"
+              echo "  curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/main/deploy/scripts/vps-bootstrap.sh | bash"
+              exit 127
+            fi
             mkdir -p /opt/bgg-rec-sys
             cd /opt/bgg-rec-sys
             if [ ! -f .env.production ]; then
