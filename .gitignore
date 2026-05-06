@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 *.pem
+# GitHub Actions deploy keypair — never commit
+github-actions-deploy
+github-actions-deploy.pub
 secrets/
 
 # --- Python ---

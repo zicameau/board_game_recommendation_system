@@ -46,7 +46,7 @@ jobs:
       - id: bundle
         run: |
           V="${{ vars.MODEL_VERSION }}"
-          if [ -z "$V" ]; then V="popularity-v1-fixture"; fi
+          if [ -z "$V" ]; then V="bgg-two-tower-v1"; fi
           echo "model_version=$V" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@v3

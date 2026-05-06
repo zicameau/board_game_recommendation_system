@@ -76,7 +76,7 @@ Repository **Variables** (optional):
 
 | Variable | Purpose |
 |---------|---------|
-| `MODEL_VERSION` | Subdirectory under `bundles/` baked into Docker (default **`popularity-v1-fixture`** if unset); e.g. `bgg-two-tower-v1` |
+| `MODEL_VERSION` | Subdirectory under `bundles/` baked into Docker (CI default **`bgg-two-tower-v1`** if unset; override per repo); e.g. `popularity-v1-fixture` |
 
 Ensure the **workflow** has **packages: write** (already set for `GITHUB_TOKEN`) so pushes to **`ghcr.io/<owner>/<repo>`** succeed. Image tags: **`main`** and **`:${{ github.sha }}`**.
 
