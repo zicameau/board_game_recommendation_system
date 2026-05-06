@@ -87,7 +87,15 @@ Repository **Variables** (optional):
 |---------|---------|
 | `MODEL_VERSION` | Subdirectory under `bundles/` baked into Docker (CI default **`bgg-two-tower-v1`** if unset; override per repo); e.g. `popularity-v1-fixture` |
 
-Ensure the **workflow** has **packages: write** (already set for `GITHUB_TOKEN`) so pushes to **`ghcr.io/<owner>/<repo>`** succeed. Image tags: **`main`** and **`:${{ github.sha }}`**.
+Ensure the **workflow** can push packages (**`build`** job declares **`permissions: packages: write`**).
+
+If **`build`** fails with **`denied: permission_denied: write_package`**, **`GITHUB_TOKEN` is still read-only**:
+
+1. **Repository:** **Settings → Actions → General → Workflow permissions** → choose **Read and write permissions** → **Save** (or whatever your org minimum is that allows **writing packages**). If this stays **Read-only**, workflows **cannot push** to GHCR even when YAML asks for **`packages: write`**.
+2. **Organization (if repo is under an org):** Org **Settings → Actions → General** — ensure repositories are allowed **`GITHUB_TOKEN`** **write** for **Packages** where required.
+3. **Fallback:** Create a classic PAT with **`write:packages`** (and **`read:packages`**), store as repo secret **`GHCR_PUSH_TOKEN`**, and change the **`docker/login-action`** **`password`** to **`${{ secrets.GHCR_PUSH_TOKEN }}`** (**`username`** = account that owns that PAT).
+
+Image tags: **`main`** and **`:${{ github.sha }}`**.
 
 ## 6. Git LFS & Docker build
 

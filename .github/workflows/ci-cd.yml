@@ -13,6 +13,10 @@ on:
 env:
   PYTHON_VERSION: "3.12"
 
+# Default: least privilege. Jobs that push to GHCR set packages: write explicitly.
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
