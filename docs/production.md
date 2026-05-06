@@ -42,7 +42,9 @@ Then create `/opt/bgg-rec-sys` layout (files are synced by CI on each deploy):
    - `ENVIRONMENT=prod`
    - `SECURE_COOKIES=true`
    - Strong `SESSION_SECRET`
-   - `DATABASE_URL` / optional `ALEMBIC_DATABASE_URL`
+   - `DATABASE_URL` / `ALEMBIC_DATABASE_URL` — paste from **Supabase Dashboard → Database → Connect**.
+     On **IPv4-only** hosts (most DigitalOcean droplets), use the **Session pooler** URI (`aws-0-*REGION*.pooler.supabase.com:5432`, username **`postgres.<project_ref>`**).
+     Do **not** rely on **`db.<project_ref>.supabase.co`** for the server: DNS is often **IPv6-only**, which produces **`Network is unreachable`** during **`docker compose … migrate`**.
    - `SUPABASE_URL`, `SUPABASE_ANON_KEY` or `SUPABASE_KEY`, `SUPABASE_JWT_SECRET` (Supabase Auth)
    - `MODEL_BUNDLE_PATH=bundles` and `MODEL_VERSION=…` (**must match the bundle baked into the image** — controlled by CI `MODEL_VERSION` repository variable).
    - `API_BASE_URL=https://boardlore.com`
@@ -127,6 +129,7 @@ Run **`docker compose -f docker-compose.prod.yml … run --rm migrate`** again o
 - **Pull denied** → **`docker login ghcr.io`** with PAT (**`GHCR_PULL_*`** in CI).
 - **Certificate failures behind Cloudflare** → origin must expose valid HTTPS for **Full (strict)** (Caddy obtains certs automatically when **80** is reachable on the apex names).
 - **Wrong model / bundle** → mismatch between baked **`MODEL_VERSION`** in CI and **`MODEL_VERSION`/`MODEL_BUNDLE_PATH`** in `.env.production`.
+- **`OperationalError` … `port 6543` … IPv6 address … `Network is unreachable`** → Postgres URL points at **`db.<ref>.supabase.co`** (IPv6-only). Switch **`DATABASE_URL`** / **`ALEMBIC_DATABASE_URL`** to the **Session pooler** hostname from the Supabase **Connect** UI (`aws-0-<region>.pooler.supabase.com`, user **`postgres.<ref>`**). If you see **`Tenant or user not found`**, the pooler **region** in the hostname does not match your project — copy the URI from the dashboard verbatim.
 
 ## 10. Reference paths (repo)
 
