@@ -100,11 +100,12 @@ jobs:
           BGG_REC_IMAGE: ${{ needs.build.outputs.image_name }}:main
           GHCR_USER: ${{ secrets.GHCR_PULL_USER }}
           GHCR_TOKEN: ${{ secrets.GHCR_PULL_TOKEN }}
+          CADDY_EMAIL: ${{ secrets.CADDY_EMAIL }}
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: BGG_REC_IMAGE,GHCR_USER,GHCR_TOKEN
+          envs: BGG_REC_IMAGE,GHCR_USER,GHCR_TOKEN,CADDY_EMAIL
           script: |
             set -euo pipefail
             export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
@@ -119,7 +120,13 @@ jobs:
               echo "Missing /opt/bgg-rec-sys/.env.production — create it on the server first (see docs/production.md)."
               exit 1
             fi
+            OLD_CADDY=$(grep '^CADDY_EMAIL=' .env.deploy 2>/dev/null || true)
             printf 'BGG_REC_IMAGE=%s\n' "$BGG_REC_IMAGE" > .env.deploy
+            if [ -n "${CADDY_EMAIL:-}" ]; then
+              printf 'CADDY_EMAIL=%s\n' "$CADDY_EMAIL" >> .env.deploy
+            elif [ -n "$OLD_CADDY" ]; then
+              printf '%s\n' "$OLD_CADDY" >> .env.deploy
+            fi
             if [ -n "${GHCR_TOKEN:-}" ] && [ -n "${GHCR_USER:-}" ]; then
               echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             fi

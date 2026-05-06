@@ -32,6 +32,9 @@ services:
   caddy:
     image: caddy:2-alpine
     restart: unless-stopped
+    env_file:
+      # BGG_REC_IMAGE ignored by Caddy; CADDY_EMAIL is required for usable public TLS.
+      - .env.deploy
     ports:
       - "80:80"
       - "443:443"

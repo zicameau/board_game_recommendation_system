@@ -52,7 +52,9 @@ Then create `/opt/bgg-rec-sys` layout (files are synced by CI on each deploy):
 
    Pydantic also looks for `.env.local` inside the container; Compose injects **`env_file: .env.production`** as environment variables, which overrides/augments defaults.
 
-2. Edit **`deploy/Caddyfile`** (after SCP from CI) and set **`email`** to your real address for Let's Encrypt.
+2. **ACME email for Caddy:** set **`CADDY_EMAIL`** to a valid address (**GitHub Actions** secret **`CADDY_EMAIL`**, recommended) **or** add **`CADDY_EMAIL=you@yourdomain.com`** to **`/opt/bgg-rec-sys/.env.deploy`** on the VPS. Each deploy merges an existing **`CADDY_EMAIL=`** line from **`.env.deploy`** if you do not use the GitHub secret. With no **`CADDY_EMAIL`**, public TLS can fail badly.
+
+   **Do not** open **`https://64.23.133.195`** — Caddy serves TLS only for **`boardlore.com`** / **`www.boardlore.com`**, so HTTPS to the bare IP often gives **`SSL_ERROR_INTERNAL_ERROR_ALERT`**. Point DNS at the droplet and use **`https://boardlore.com`** (`http://` on the domain still redirects once certs exist). Optionally test **`http://64.23.133.195`** port **80** (plain HTTP — no SSL to the IP in the stock config).
 
 3. **Docker login to GHCR** on the VPS (needed if packages are **private**):
 
@@ -80,6 +82,7 @@ Repository secrets for **`.github/workflows/ci-cd.yml`**:
 | `SSH_HOST` | `64.23.133.195` |
 | `SSH_USER` | e.g. `root` |
 | `SSH_PRIVATE_KEY` | PEM for that user (`ssh-ed25519`/`rsa`) |
+| `CADDY_EMAIL` *(recommended)* | Real email for Let's Encrypt (**`deploy/Caddyfile`** uses **`{$CADDY_EMAIL}`**); alternatively set **`CADDY_EMAIL`** in **`.env.deploy`** on the server |
 | `GHCR_PULL_USER` *(optional)* | GH username for **`docker login`** |
 | `GHCR_PULL_TOKEN` *(optional)* | PAT with **`read:packages`** if image is private |
 
@@ -128,6 +131,7 @@ Run **`docker compose -f docker-compose.prod.yml … run --rm migrate`** again o
 - **Deploy: `docker: command not found`** → run [§3 First-time VPS setup](#3-first-time-vps-setup) bootstrap on the droplet (Docker Engine + compose plugin), then re-run the workflow.
 - **Pull denied** → **`docker login ghcr.io`** with PAT (**`GHCR_PULL_*`** in CI).
 - **Certificate failures behind Cloudflare** → origin must expose valid HTTPS for **Full (strict)** (Caddy obtains certs automatically when **80** is reachable on the apex names).
+- **`SSL_ERROR_INTERNAL_ERROR_ALERT` to `https://<droplet-ip>`** → expected: use **`https://boardlore.com`** (DNS **A** → droplet). Also set **`CADDY_EMAIL`** (secret or **`.env.deploy`**) and check **`docker compose … logs caddy`** for ACME errors.
 - **Wrong model / bundle** → mismatch between baked **`MODEL_VERSION`** in CI and **`MODEL_VERSION`/`MODEL_BUNDLE_PATH`** in `.env.production`.
 - **`OperationalError` … IPv6 address … `Network is unreachable`** → Postgres URL points at **`db.<ref>.supabase.co`** (IPv6-only). Switch **`DATABASE_URL`** / **`ALEMBIC_DATABASE_URL`** to the **Session pooler** string from **Connect** (**`*.pooler.supabase.com`**, user **`postgres.<ref>`**). If you see **`Tenant or user not found`**, paste the URI from the dashboard instead of guessing host/region.
 

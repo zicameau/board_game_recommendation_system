@@ -1,8 +1,8 @@
 # TLS at origin (boardlore.com). For Cloudflare "Full (strict)", keep certificates valid here.
-# Replace the email (Let's Encrypt registration contact).
-
+# Let's Encrypt registration email — must be valid. Set env CADDY_EMAIL (see .env.deploy on the VPS
+# or optional GitHub secret CADDY_EMAIL + deploy merge).
 {
-	email CHANGE_ME_EMAIL@boardlore.com
+	email {$CADDY_EMAIL}
 }
 
 boardlore.com, www.boardlore.com {
