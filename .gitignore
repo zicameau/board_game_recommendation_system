@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!deploy/.env.deploy.example
 *.pem
 # GitHub Actions deploy keypair — never commit
 github-actions-deploy
