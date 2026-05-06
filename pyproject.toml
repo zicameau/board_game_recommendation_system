@@ -5,6 +5,7 @@ description = "BoardGameGeek recommender (Phase 1 per ERD v8)"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "psycopg2-binary>=2.9.9",
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "sqlalchemy>=2.0.36",
