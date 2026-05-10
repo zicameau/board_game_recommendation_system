@@ -135,9 +135,40 @@ Run **`docker compose -f docker-compose.prod.yml … run --rm migrate`** again o
 - **Wrong model / bundle** → mismatch between baked **`MODEL_VERSION`** in CI and **`MODEL_VERSION`/`MODEL_BUNDLE_PATH`** in `.env.production`.
 - **`OperationalError` … IPv6 address … `Network is unreachable`** → Postgres URL points at **`db.<ref>.supabase.co`** (IPv6-only). Switch **`DATABASE_URL`** / **`ALEMBIC_DATABASE_URL`** to the **Session pooler** string from **Connect** (**`*.pooler.supabase.com`**, user **`postgres.<ref>`**). If you see **`Tenant or user not found`**, paste the URI from the dashboard instead of guessing host/region.
 
-## 10. Reference paths (repo)
+## 10. Triaging Cloudflare **502** (before restarting anything)
+
+Gather proof while the broken state still exists:
+
+1. **On the VPS** (from **`/opt/bgg-rec-sys`**, as root):
+
+   ```bash
+   bash deploy/scripts/triage-origin.sh
+   ```
+
+   This writes a timestamped **`triage-*.log`** with compose status, **`docker inspect`/`docker top`** for **`app`**, **`app`/`caddy` logs**, **`wget` from Caddy → `http://app:8000/healthz`**, and **`dmesg`** lines that mention OOM/kill.
+
+2. **Quick manual checks** (if you skip the script):
+
+   ```bash
+   cd /opt/bgg-rec-sys
+   docker compose -f docker-compose.prod.yml --env-file .env.deploy ps -a
+   docker inspect bgg-rec-sys-app-1 --format '{{.State.Health}} {{.State.Status}} OOM={{.State.OOMKilled}}'
+   docker top bgg-rec-sys-app-1
+   docker compose -f docker-compose.prod.yml --env-file .env.deploy logs --tail=300 app caddy
+   docker exec bgg-rec-sys-caddy-1 wget -qSO- http://app:8000/healthz 2>&1
+   ```
+
+3. **Interpretation:**
+
+   - **`dial tcp …:8000: connection refused`** in Caddy logs while **`curl`/`wget` healthz fails** usually means **`uvicorn` is not listening** (crashed zombie container, stuck runtime, etc.). Use the log bundle to see last application lines before **`--force-recreate app`**.
+   - **`docker compose ps`** **`(unhealthy)`** on **`app`** means the Compose **healthcheck** has been failing (**`/healthz`**) — see [`docker-compose.prod.yml`](../docker-compose.prod.yml).
+
+4. Optional **external alerting**: uptime monitor hitting **`https://boardlore.com/healthz`** (or **`/`**) so you get notified before users only see 502 via Cloudflare.
+
+## 11. Reference paths (repo)
 
 - [`Dockerfile`](../Dockerfile) — **`ARG MODEL_VERSION`**
 - [`docker-compose.prod.yml`](../docker-compose.prod.yml)
 - [`deploy/Caddyfile`](../deploy/Caddyfile)
 - [`deploy/scripts/vps-bootstrap.sh`](../deploy/scripts/vps-bootstrap.sh)
+- [`deploy/scripts/triage-origin.sh`](../deploy/scripts/triage-origin.sh) — 502 evidence bundle (**run before recreate**)

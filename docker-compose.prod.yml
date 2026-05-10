@@ -16,6 +16,12 @@ services:
       - .env.production
     expose:
       - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/healthz"]
+      interval: 30s
+      timeout: 15s
+      retries: 4
+      start_period: 120s
     networks:
       - edge
 
