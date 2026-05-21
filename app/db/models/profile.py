@@ -1,4 +1,12 @@
-"""Profile model — §4.5.1."""
+"""`Profile` ORM model — the application's per-user row.
+
+One-to-one with Supabase `auth.users` (`profiles.id` is both PK and FK with `ON DELETE
+CASCADE`). The owning relationships to `OnboardingSelection` and `UserEmbedding` also
+cascade — deleting a profile cleans up onboarding + embedding rows in one step.
+
+`onboarding_completed_at` is the canonical "did this user finish the wizard" flag; routes
+check `is None` rather than tracking it in the session.
+"""
 
 from __future__ import annotations
 
@@ -18,6 +26,8 @@ if TYPE_CHECKING:
 
 
 class Profile(Base):
+    """Application user. PK + FK to `auth.users.id`; deletes cascade to owned rows."""
+
     __tablename__ = "profiles"
 
     id: Mapped[uuid.UUID] = mapped_column(

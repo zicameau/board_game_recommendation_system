@@ -1,4 +1,18 @@
-"""Onboarding wizard — §3 + §4 onboarding_selections."""
+"""Onboarding wizard routes and the destructive `POST /onboarding/reset`.
+
+The wizard is a chain of 7 GET/POST pairs that progressively populate one
+`OnboardingSelection` row per user:
+
+    welcome → seed_ratings → categories → mechanics → complexity → play_context →
+    player_profile → summary → POST /onboarding/complete
+
+`/onboarding/complete` validates the seed ratings, fits the user embedding via the active
+recommender, persists it (with the current `MODEL_VERSION`), stamps
+`profiles.onboarding_completed_at`, and redirects to `/home`.
+
+`POST /onboarding/reset` is the inverse: deletes the embedding + selection rows and
+clears `onboarding_completed_at` so the user starts the wizard from a blank slate.
+"""
 
 from __future__ import annotations
 
@@ -32,6 +46,11 @@ router = APIRouter(prefix="/onboarding", tags=["onboarding"])
 
 
 def _games_payload():
+    """Build the template-ready list of 10 seed games for the seed_ratings step.
+
+    Deterministic per `MODEL_VERSION` — `pick_seed_game_indices` returns the same indices
+    for every user given the same bundle.
+    """
     rec = registry.recommender
     df = getattr(rec, "games_meta", None)
     if df is None:
@@ -57,6 +76,11 @@ def _games_payload():
 
 
 def _ensure_selection(db: Session, user_id, model_version: str) -> OnboardingSelection:
+    """Return the user's `OnboardingSelection` row, creating an empty one if missing.
+
+    Every wizard GET calls this so each step is robust to the user landing on it directly
+    (e.g. via the URL bar) before earlier steps have run.
+    """
     row = db.get(OnboardingSelection, user_id)
     if row:
         return row
@@ -271,6 +295,15 @@ def complete_post(
     user: DependsLogin,
     db: Session = Depends(get_db),
 ):
+    """Finalize onboarding: validate ratings, fit and persist the user embedding, stamp completion.
+
+    Validation order: at least one non-`never_played` rating is required, and the resulting
+    signed weight vector must contain at least one positive or negative weight. Both error
+    cases redirect back to `/onboarding/seed_ratings` with an `error=` query parameter.
+
+    On success, persists a new `UserEmbedding` with the active `MODEL_VERSION`, sets
+    `onboarding_completed_at = now()`, and redirects to `/home`.
+    """
     _ = request
     sel = db.get(OnboardingSelection, user.id)
     if sel is None or len(sel.game_ratings) == 0:

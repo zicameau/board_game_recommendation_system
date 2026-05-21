@@ -1,4 +1,25 @@
-"""JWT extraction and Profile resolution."""
+"""FastAPI auth dependencies that every protected route ultimately uses.
+
+The two public dependency aliases are:
+
+- `DependsProfileOptional` — returns `Profile | None`. Useful for routes that render
+  differently for guests vs. authenticated users (e.g. `/`, `/login`).
+- `DependsLogin` — returns `Profile`, raising `HTTPException(303, Location=/login)` when
+  the visitor has no valid session. The exception is converted to a real redirect by the
+  handler in `app/main.py`.
+
+Both work in two modes:
+
+- `AUTH_MODE=supabase` (default) — decode the access-token cookie, refresh once on
+  expiry, and look up / upsert the local `Profile` keyed by `sub`.
+- `AUTH_MODE=dev_shim` — defer to `app.auth.dev_shim.get_profile_for_dev_header`
+  (header / query / signed-session resolution, deterministic UUID per name).
+
+`ensure_profile` is the upsert function that keeps the local `profiles` row aligned with
+Supabase user metadata (email + display username). It also handles the rare case where
+two Supabase users want the same `profiles.username` — raises
+`ProfileUsernameUnavailableError` for the route to handle.
+"""
 
 from __future__ import annotations
 
@@ -24,6 +45,7 @@ logger = logging.getLogger(__name__)
 
 
 def _decode_access_token(token: str) -> dict:
+    """Wrap `supabase_jwt.decode_access_token` so PyJWT errors become 401 `HTTPException`s."""
     try:
         return decode_access_token(token)
     except ExpiredSignatureError as e:
@@ -36,6 +58,12 @@ def _decode_access_token(token: str) -> dict:
 
 
 def try_refresh_tokens(request: Request, response: Response) -> str | None:
+    """Exchange the refresh-cookie for a new access token and update both cookies in place.
+
+    Returns the new access token on success (and mutates `response` to set the cookies), or
+    `None` if there's no refresh cookie or the exchange fails. Safe to call on every
+    request — non-destructive and cheap on miss.
+    """
     refresh_token = request.cookies.get(settings.REFRESH_COOKIE_NAME)
     if not refresh_token:
         return None
@@ -81,6 +109,11 @@ def decode_access_optional(request: Request, response: Response) -> dict | None:
 
 
 def resolve_login_email(db: Session, identifier: str) -> tuple[str | None, Profile | None]:
+    """Look up the email for a login `identifier` that may be an email or a username.
+
+    Returns ``(email, profile)`` if a row was found, ``(None, None)`` otherwise. No longer
+    called by the login route (which is email-only now) but kept as a utility.
+    """
     ident = identifier.strip()
     if "@" in ident:
         stmt = select(Profile).where(Profile.email == ident.lower())
@@ -108,6 +141,7 @@ class ProfileUsernameUnavailableError(Exception):
 
 
 def _profile_by_username(db: Session, username: str) -> Profile | None:
+    """Single-row lookup by exact (already-normalized) username; returns None on miss."""
     return db.execute(select(Profile).where(Profile.username == username)).scalar_one_or_none()
 
 
@@ -149,6 +183,17 @@ def _sync_profile_from_auth(
 
 
 def ensure_profile(db: Session, user_id: uuid.UUID, email: str, username: str) -> Profile:
+    """Upsert a local `Profile` for a Supabase user; keep email + username in sync on every login.
+
+    Local-only setups: also inserts a placeholder `auth.users` row so the FK constraint is
+    satisfied. The savepoint around the insert means a permission failure on `auth.users`
+    (common when DATABASE_URL points at hosted Supabase Postgres with restricted roles)
+    leaves the session usable for the profile insert.
+
+    Raises:
+        ProfileUsernameUnavailableError: when `username` already belongs to a different
+            local profile and we can't safely link.
+    """
     desired_email = email.strip()
     desired_username = _normalize_username(username)
 
@@ -201,6 +246,12 @@ def get_profile_optional(
     response: Response,
     db: Session = Depends(get_db),
 ) -> Profile | None:
+    """Return the current `Profile` if authenticated, else `None` (works in both auth modes).
+
+    Side-effects: stashes claims on `request.state.auth_claims`, the profile on
+    `request.state.profile`, and may refresh auth cookies on `response` if the access
+    token had expired.
+    """
     if settings.AUTH_MODE == "dev_shim":
         from app.auth import dev_shim
 
@@ -232,7 +283,11 @@ def require_login(
     response: Response,
     db: Session = Depends(get_db),
 ) -> Profile:
-    """Redirect unauthenticated browsers to /login."""
+    """Return the current `Profile` or raise `HTTPException(303, Location=/login)`.
+
+    The 303 is converted to a real redirect by the exception handler in `app/main.py`.
+    Also enforces AAL2 if `STRICT_AAL=1` and the project uses MFA.
+    """
     profile = get_profile_optional(request, response, db)
     if profile is None:
         raise HTTPException(

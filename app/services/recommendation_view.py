@@ -1,4 +1,11 @@
-"""Enrich top-k recommendation rows for the home UI (scores, copy, imagery)."""
+"""Turn raw recommender output into template-ready dicts.
+
+`home_routes.py` calls `build_recommendation_items(pairs, games_meta, sel)` with the
+top-k `(game_idx, raw_score)` pairs from the registry. We join against `games_meta` for
+title/description/thumbnail, normalize scores into per-request 0–100% / 1–10 bands, and
+write a short prose `why` string explaining the pick in terms of the user's onboarding
+selections.
+"""
 
 from __future__ import annotations
 
@@ -11,7 +18,13 @@ from app.services.bundle_taxonomy import labels_from_cell, plain_description
 
 
 def normalize_match_scores(raw_scores: list[float]) -> list[dict[str, float]]:
-    """Map raw dot-product scores to a 0–100% band and 1–10 scale within this result set."""
+    """Map raw dot-product scores to a 0–100% band and 1–10 scale within this result set.
+
+    Normalization is *per response*, not absolute: the top score is always 100% / 10.0,
+    the bottom 0% / 1.0. This is intentional — raw dot-product magnitudes aren't user
+    intuitive, but the relative ordering is. If every score is identical (no variance) we
+    return 100% across the board.
+    """
     if not raw_scores:
         return []
     lo, hi = min(raw_scores), max(raw_scores)
@@ -30,6 +43,11 @@ def normalize_match_scores(raw_scores: list[float]) -> list[dict[str, float]]:
 
 
 def thumbnail_url_from_row(row: pd.Series) -> str | None:
+    """Pull a usable thumbnail URL from a games_meta row, tolerating BGG's multi-column variations.
+
+    Promotes protocol-relative `//example.com/foo.jpg` to `https://`; returns `None` for
+    empty / `nan` cells so the template can fall back to a placeholder.
+    """
     raw = row.get("thumbnail") or row.get("image") or row.get("imageurl") or ""
     u = str(raw).strip()
     if not u or u.lower() in {"nan", "none"}:
@@ -42,7 +60,13 @@ def thumbnail_url_from_row(row: pd.Series) -> str | None:
 
 
 def explain_recommendation(sel: OnboardingSelection, row: pd.Series) -> str:
-    """Short justification from onboarding prefs + taxonomy vs this game."""
+    """Build a short prose explanation comparing the user's liked/disliked tags to the game's tags.
+
+    Picks at most 4 matched categories and 3 matched mechanics for the positive callout,
+    and flags up to 2 conflicting tags as caveats. If there are no overlaps either way,
+    falls back to a generic "similar to the games you rated highest" message — which is
+    actually how the two-tower retrieval works under the hood, just phrased gently.
+    """
     liked_cats = {str(x).strip() for x in (sel.liked_categories or []) if str(x).strip()}
     liked_mech = {str(x).strip() for x in (sel.liked_mechanics or []) if str(x).strip()}
     dis_cats = {str(x).strip() for x in (sel.disliked_categories or []) if str(x).strip()}
@@ -88,7 +112,13 @@ def build_recommendation_items(
     sel: OnboardingSelection,
     desc_max_len: int = 360,
 ) -> list[dict[str, Any]]:
-    """Produce template-ready dicts with blurbs, thumbnails, normalized scores."""
+    """Join recommender output with bundle metadata; return template-ready dicts.
+
+    Each returned dict has: `game_idx`, `title`, `bgg_id`, `raw_score`, `match_pct`,
+    `match_10`, `description` (HTML-cleaned, truncated), `thumbnail_url`, and `why`. If a
+    game can't be found in `games_meta` we degrade gracefully (placeholder title, no
+    thumbnail) instead of dropping it from the response.
+    """
     if not pairs:
         return []
     scores = [p[1] for p in pairs]

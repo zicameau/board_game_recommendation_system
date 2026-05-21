@@ -1,4 +1,10 @@
-"""Map onboarding labels → recommender inputs; lazy refit user embedding — §5.15.5."""
+"""Bridge between the onboarding wizard and the recommender.
+
+`map_game_ratings_to_signed` converts the wizard's qualitative labels (Love / Like /
+Dislike / Hate / Never played) into the signed-weight format the recommender's
+`fit_user_embedding` expects. `get_or_refit_user_embedding` is the cache-aware getter that
+every request to `/home` ultimately calls.
+"""
 
 from __future__ import annotations
 
@@ -20,7 +26,12 @@ logger = logging.getLogger(__name__)
 def map_game_ratings_to_signed(
     game_ratings: list[dict[str, Any]],
 ) -> tuple[list[int], list[int], list[float]]:
-    """§5.3.2 default mapping."""
+    """Convert onboarding labels into ``(positives, negatives, weights)`` for `fit_user_embedding`.
+
+    Default mapping: Love=+1.0, Like=+0.5, Dislike=-0.5, Hate=-1.0, Never played=skipped.
+    Weights for positives are positive, for negatives are negative — the recommender uses
+    the signs to compose the user vector.
+    """
     positives: list[int] = []
     negatives: list[int] = []
     weights: list[float] = []
@@ -49,6 +60,15 @@ def get_or_refit_user_embedding(
     db: Session,
     reg: ModelRegistry,
 ) -> np.ndarray:
+    """Return the user's embedding, refitting and persisting it if the active `MODEL_VERSION` has moved.
+
+    Three branches:
+      1. Cache hit (`UserEmbedding.model_version == settings.MODEL_VERSION`) — return as-is.
+      2. Version mismatch or missing row — recompute from `OnboardingSelection.game_ratings`,
+         merge a fresh row with the active `model_version`, commit, return.
+      3. No `OnboardingSelection` row — raise ``ValueError("onboarding_required")``; the
+         caller (home_routes) redirects to the wizard.
+    """
     active_version = settings.MODEL_VERSION
     row = db.get(UserEmbedding, user_id)
     if row is not None and row.model_version == active_version:

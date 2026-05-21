@@ -1,7 +1,17 @@
-"""
-Local development auth shim (§7.3.1).
-Hard-gated: only ENVIRONMENT=local AND AUTH_MODE=dev_shim.
-Creates users in auth.users stub + Profile when missing.
+"""Local-only auth shim that lets you work without a Supabase project.
+
+Resolution order on every protected route (see `get_profile_for_dev_header`):
+
+    1. `X-Dev-User` header  (CLI / API clients)
+    2. `?dev_user=<name>` query parameter  (first browser visit)
+    3. Signed-session `dev_user` key  (set by step 1 or 2 on first contact, then sticky)
+
+The resolved name maps to a deterministic `uuid.uuid5(NAMESPACE_DNS, name)`, which is used
+both as the `Profile.id` and as a placeholder `auth.users.id` (the FK target). This means
+the same dev name always reproduces the same local user across runs.
+
+Hard-gated by `assert_dev_shim_safe()` — any code path that touches a Profile via this
+module will raise `RuntimeError` outside `ENVIRONMENT=local + AUTH_MODE=dev_shim`.
 """
 
 from __future__ import annotations
@@ -17,6 +27,7 @@ from app.db.models.profile import Profile
 
 
 def assert_dev_shim_safe() -> None:
+    """Refuse to run dev-shim code paths outside `ENVIRONMENT=local + AUTH_MODE=dev_shim`."""
     if settings.ENVIRONMENT != "local" or settings.AUTH_MODE != "dev_shim":
         raise RuntimeError(
             "dev_shim forbidden outside ENVIRONMENT=local + AUTH_MODE=dev_shim"
@@ -25,6 +36,7 @@ def assert_dev_shim_safe() -> None:
 
 
 def _ensure_auth_stub_user(session: Session, user_id: uuid.UUID) -> None:
+    """Insert a placeholder `auth.users` row so the `profiles.id` FK is satisfied locally."""
     session.execute(
         text(
             """
@@ -62,6 +74,7 @@ def dev_shim_resolve_username(request: Request) -> str | None:
 
 
 def get_profile_for_dev_header(request: Request, db: Session) -> Profile | None:
+    """Resolve the dev identity, upsert its `Profile`, and return it (or `None` if no identity available)."""
     assert_dev_shim_safe()
     u = dev_shim_resolve_username(request)
     if not u:

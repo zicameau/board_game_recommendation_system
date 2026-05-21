@@ -1,9 +1,13 @@
-"""Onboarding seed list: same games for every user — deterministic from each bundle's games_meta.
+"""Pick the 10 seed games shown during onboarding — same set for every user, per bundle.
 
-Selection spans the BGG complexity axis (averageweight 1-5) so the user's ratings
-inform the model about where on the complexity dimension they prefer, in addition
-to which genres they enjoy. Within each complexity bucket, picks popular and
-category-diverse games.
+The seed list is deterministic from the bundle's `games_meta.parquet`: no randomness, no
+per-user variation. We deliberately span the BGG complexity axis (`averageweight` 1–5) so
+the user's ratings teach the model where on the complexity dimension they prefer in
+addition to which genres they like. Within each bucket we prefer popular, category-diverse
+games so the typical user recognizes most of the list.
+
+If the active bundle lacks `averageweight`, we fall back to legacy "popularity +
+category diversity" selection so the popularity fixture still produces 10 seeds.
 """
 
 from __future__ import annotations
@@ -32,6 +36,7 @@ PER_BUCKET = SEED_GAME_COUNT // len(COMPLEXITY_BUCKETS)  # 2
 
 
 def _category_for_row(row: Any, has_cat: bool) -> str:
+    """Return the first BGG category for a row, or `"Other"` when no category column exists."""
     if not has_cat:
         return "Other"
     if hasattr(row, "get"):

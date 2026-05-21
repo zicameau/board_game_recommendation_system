@@ -1,4 +1,17 @@
-"""Auth HTML routes — §3 workflows."""
+"""Authentication HTML routes (login, register, logout, email-confirm callback, MFA placeholder).
+
+The forms collect email + password only — `_derive_username_from_email` generates a unique
+display name from the email's local part to satisfy the NOT-NULL + UNIQUE `profiles.username`
+column without making the user pick one.
+
+The Supabase email-confirm flow (`/auth/callback` → `/auth/set-session`) is two-stage because
+the access/refresh tokens arrive in the URL **hash** (not the query string) and therefore
+can't be read server-side. The callback page JS POSTs them to `set-session`, which verifies
+the JWT (HS256 or JWKS) and sets HTTP-only cookies.
+
+`POST /logout` clears auth cookies, best-effort revokes the Supabase session, and (in
+dev_shim) wipes the signed-session `dev_user` so logout actually logs you out.
+"""
 
 from __future__ import annotations
 
@@ -32,12 +45,15 @@ router = APIRouter(tags=["auth"])
 
 
 class SetSessionBody(BaseModel):
+    """Request body for `POST /auth/set-session` (tokens forwarded from the callback JS)."""
+
     access_token: str
     refresh_token: str
     expires_in: int = Field(default=3600, ge=60, le=86400 * 14)
 
 @router.get("/auth/callback")
 def auth_callback(request: Request):
+    """Land the email-confirm redirect; the page's JS reads tokens from the URL hash."""
     return request.app.state.templates.TemplateResponse(
         request,
         "auth/callback.html",
@@ -51,7 +67,11 @@ def auth_set_session(
     body: SetSessionBody,
     db: Session = Depends(get_db),
 ):
-    """Accept tokens from email-confirm hash (client POST); verify JWT (HS256 or JWKS ES256), set HTTP-only cookies."""
+    """Verify the just-confirmed JWT, upsert a local profile, set auth cookies, and return a JSON redirect target.
+
+    Called only by the JS in `auth/callback.html` (browser-side hand-off). 401 if the JWT is
+    invalid, 409 if the user_metadata username collides with another local profile.
+    """
     if settings.AUTH_MODE != "supabase":
         return JSONResponse(
             {"detail": "set-session only for AUTH_MODE=supabase"},
@@ -100,6 +120,7 @@ def login_form(
     request: Request,
     profile: DependsProfileOptional,
 ):
+    """Render the login form; redirect away if the visitor already has a valid session."""
     if profile:
         return RedirectResponse(
             "/home" if profile.onboarding_completed_at else "/onboarding/welcome",
@@ -131,6 +152,12 @@ def login_post(
     password: Annotated[str, Form()],
     db: Session = Depends(get_db),
 ):
+    """Process the login form: Supabase password grant, ensure local profile, set cookies, redirect.
+
+    Re-renders the form with `error` on any failure (bad credentials, MFA-required without
+    completion, username conflict). On success redirects to `/home` (onboarded) or
+    `/onboarding/welcome`.
+    """
     email = email.strip().lower()
     try:
         data = sign_in_password(email, password)
@@ -192,6 +219,7 @@ def login_post(
 
 @router.get("/register")
 def register_form(request: Request):
+    """Render the registration form; the dev_shim branch explains the local-only flow instead."""
     dev = settings.AUTH_MODE == "dev_shim"
     return request.app.state.templates.TemplateResponse(
         request,
@@ -222,6 +250,13 @@ def register_post(
     password: Annotated[str, Form()],
     db: Session = Depends(get_db),
 ):
+    """Process the registration form: derive username, Supabase signup, link local profile.
+
+    Username comes from the email's local part with a hex suffix on collision (see
+    `_derive_username_from_email`). If Supabase returns an immediate session (email
+    confirmation disabled), cookies are set and the user goes straight to onboarding;
+    otherwise the user is told to confirm their email and come back to log in.
+    """
     if settings.AUTH_MODE == "dev_shim":
         notice = (
             "Registration is disabled in dev_shim mode. "
@@ -307,6 +342,7 @@ def register_post(
 
 @router.post("/logout")
 def logout(request: Request):
+    """Clear auth cookies, best-effort revoke the Supabase session, drop dev_shim identity."""
     access = request.cookies.get(settings.ACCESS_COOKIE_NAME)
     if access and settings.AUTH_MODE == "supabase":
         try:
@@ -322,6 +358,7 @@ def logout(request: Request):
 
 @router.get("/login/mfa")
 def mfa_form_placeholder(request: Request):
+    """Placeholder for the multi-factor-auth step (not wired into login yet)."""
     return request.app.state.templates.TemplateResponse(
         request,
         "auth/mfa.html",

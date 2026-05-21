@@ -1,4 +1,11 @@
-"""Verify Supabase JWTs: legacy HS256 (shared secret) or asymmetric (JWKS at auth/v1)."""
+"""Verify Supabase access tokens (HS256 legacy or asymmetric ES256/RS256 via JWKS).
+
+Older Supabase projects sign tokens with a shared HS256 secret (`SUPABASE_JWT_SECRET`).
+Newer projects rotate keys and publish them at `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`;
+`decode_access_token` inspects the token header and routes to whichever path matches.
+
+The JWKS client is cached at module scope so we only hit the JWKS endpoint once per process.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +18,7 @@ _jwks_client: PyJWKClient | None = None
 
 
 def _jwks() -> PyJWKClient:
+    """Return the lazily-initialized JWKS client for the configured Supabase URL."""
     global _jwks_client
     if not settings.SUPABASE_URL:
         raise InvalidTokenError("SUPABASE_URL not configured")
@@ -21,7 +29,18 @@ def _jwks() -> PyJWKClient:
 
 
 def decode_access_token(token: str) -> dict:
-    """Verify signature and return claims. Supports HS256 (legacy) and ES256/RS256 via JWKS."""
+    """Verify the signature and return decoded claims.
+
+    Picks the algorithm from the token header. For HS256, requires `SUPABASE_JWT_SECRET`.
+    For asymmetric algs, fetches the signing key from JWKS. Requires `exp` and `sub` claims.
+    Audience is checked against ``"authenticated"`` if present; if a token omits the
+    audience claim, the verification is retried without that requirement (some Supabase
+    edge cases ship tokens without `aud`).
+
+    Raises:
+        jwt.InvalidTokenError: for unsupported algs, missing config, or signature failures.
+        jwt.ExpiredSignatureError: when the token's `exp` is in the past.
+    """
     header = jwt.get_unverified_header(token)
     alg = header.get("alg") or "HS256"
 

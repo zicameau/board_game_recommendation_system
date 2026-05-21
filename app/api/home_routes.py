@@ -1,4 +1,12 @@
-"""Authenticated home + recommendations — §6."""
+"""Authenticated home page and root redirect.
+
+`GET /home` is the personalized recommendations page. It loads (or refits) the user's
+embedding via `get_or_refit_user_embedding`, queries the active recommender for top-k
+games, and enriches the rows for the template via `build_recommendation_items`.
+
+`GET /` is just the entry point: redirects guests to `/login`, partially-onboarded users
+to `/onboarding/welcome`, and finished users to `/home`.
+"""
 
 from __future__ import annotations
 
@@ -25,6 +33,13 @@ def home(
     user: DependsLogin,
     db: Session = Depends(get_db),
 ):
+    """Render the personalized recommendations page.
+
+    Gating: if the user hasn't completed onboarding, or hasn't filled selections, or has
+    no embedding the recommender can rebuild, redirect back to the wizard. Otherwise
+    compute (or pull from cache) the user vector, ask the registry for top-10 games
+    excluding ones already rated, and render `home.html`.
+    """
     if user.onboarding_completed_at is None:
         return RedirectResponse("/onboarding/welcome", status_code=303)
 
@@ -65,6 +80,7 @@ def index(
     response: Response,
     profile: DependsProfileOptional,
 ):
+    """Root URL — bounce the visitor to the right place based on session state."""
     if profile is None:
         return RedirectResponse("/login", status_code=303)
     if profile.onboarding_completed_at is None:

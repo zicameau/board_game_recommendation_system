@@ -1,4 +1,13 @@
-"""User embedding storage — §4.5.3."""
+"""`UserEmbedding` ORM model — cached user-tower vector keyed by `user_id`.
+
+`model_version` records which bundle produced this vector. The runtime invalidation rule
+lives in `app.services.embeddings.get_or_refit_user_embedding`: if the stored
+`model_version` no longer matches `settings.MODEL_VERSION`, the embedding is recomputed
+on the next `/home` visit and merged back here.
+
+`embedding` is stored as `REAL[]` (Postgres array of float4) so the dimension can vary
+across bundle versions without a schema change.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +26,8 @@ if TYPE_CHECKING:
 
 
 class UserEmbedding(Base):
+    """Cached user-tower vector. Invalidated automatically when `model_version` drifts from `settings.MODEL_VERSION`."""
+
     __tablename__ = "user_embeddings"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

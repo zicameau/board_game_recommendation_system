@@ -1,4 +1,13 @@
-"""Onboarding selections — §4.5.2."""
+"""`OnboardingSelection` ORM model — one row per user, populated incrementally by the wizard.
+
+`game_ratings` is the only field that drives recommendations directly; the categories /
+mechanics / complexity / play_context / player_profile fields are captured for future
+personalization (Phase 2+) and for the summary screen, but the current two-tower path only
+reads `game_ratings`.
+
+`model_version` snapshots which bundle was active when the row was first persisted, useful
+for debugging old onboarding data after a bundle bump.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +26,8 @@ if TYPE_CHECKING:
 
 
 class OnboardingSelection(Base):
+    """Per-user wizard answers. `game_ratings` is the only field that the recommender reads today."""
+
     __tablename__ = "onboarding_selections"
 
     user_id: Mapped[uuid.UUID] = mapped_column(

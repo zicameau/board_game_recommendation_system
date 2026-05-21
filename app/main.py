@@ -1,4 +1,20 @@
-"""FastAPI entry: static, Jinja SSR, SessionMiddleware, model registry warmup — §3 + §5.7."""
+"""FastAPI application entry point.
+
+Wires together every subsystem the rest of the app expects:
+
+- Jinja2 templates (`app.state.templates`) with a `static_url()` helper that appends `?v=<mtime>`
+  to static asset URLs so browsers refetch when CSS/JS files change.
+- `SessionMiddleware` for the signed cookie used by the dev shim and (in future) flash messages.
+- Global exception handlers that turn `HTTPException(303, headers={"Location": ...})` from
+  auth deps into real `RedirectResponse`es, and surface a friendly login error when a
+  Supabase user_metadata username collides with another local profile.
+- The `lifespan` context that calls `registry.load_active()` exactly once, loading
+  `bundles/<MODEL_VERSION>/` into memory before serving requests.
+- `StaticFiles` mount and the three routers in `app.api`.
+
+The seemingly unused imports of `popularity` and `two_tower` are intentional — they trigger
+the `@register(...)` decorators that populate the recommender registry.
+"""
 
 from __future__ import annotations
 
@@ -25,7 +41,19 @@ templates = Jinja2Templates(directory=str(_PKG / "templates"))
 
 
 def static_url(path: str) -> str:
-    """Versioned static URL — appends ?v=<mtime> so browsers refetch when assets change."""
+    """Return a cache-busted URL for a file under `app/static/`.
+
+    Appends ``?v=<mtime>`` so the URL changes every time the asset is edited; browsers will
+    refetch automatically without needing a hard refresh. Used as a Jinja global; see
+    `base.html`.
+
+    Args:
+        path: Path relative to ``app/static/`` (e.g. ``"css/app.css"``).
+
+    Returns:
+        URL string like ``"/static/css/app.css?v=1748999137"``. If the file is missing
+        (`OSError`), returns ``"?v=0"`` rather than raising.
+    """
     full = _PKG / "static" / path.lstrip("/")
     try:
         mtime = int(full.stat().st_mtime)
@@ -39,6 +67,11 @@ templates.env.globals["static_url"] = static_url
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Process-wide startup/shutdown context.
+
+    On startup: load the active recommender bundle (memory-maps `item_embeddings.npy`)
+    and expose the Jinja templates on `app.state`. On shutdown: nothing to clean up.
+    """
     registry.load_active()
     app.state.templates = templates
     yield
@@ -67,6 +100,7 @@ async def http_exc_redirect_html(request: Request, exc: HTTPException):  # noqa:
 
 @app.exception_handler(RequestValidationError)
 async def validation_json(request: Request, exc: RequestValidationError):  # noqa: ARG001
+    """Return Pydantic validation errors as JSON 422 (consistent for both browser and API callers)."""
     return JSONResponse({"detail": exc.errors()}, status_code=422)
 
 

@@ -1,4 +1,16 @@
-"""Load category / mechanic label lists from the active model bundle (JSON + parquet fallbacks)."""
+"""Read category / mechanic label lists from the active bundle and clean BGG-style strings.
+
+Two purposes living together because they all draw from the same parquet:
+
+1. **Onboarding chip options.** `load_category_options` / `load_mechanic_options` produce
+   the deduped, case-insensitively sorted strings rendered as chips on the categories /
+   mechanics wizard steps. The category function prefers an explicit `categories.json` in
+   the bundle when present; both fall back to scanning the parquet's BGG-style columns.
+
+2. **Display cleanup.** `plain_description` strips HTML tags and decodes HTML entities so
+   BGG descriptions render as plain text. `labels_from_cell` and `first_category_label`
+   parse the BGG list-or-string cells consistently.
+"""
 
 from __future__ import annotations
 
@@ -19,6 +31,7 @@ _DEFAULT_MECHANICS = ["Deck Building", "Worker Placement", "Dice", "Negotiation"
 
 
 def _normalize_label(s: str) -> str:
+    """Trim whitespace and strip a single layer of surrounding double quotes."""
     t = str(s).strip()
     if len(t) >= 2 and t[0] == '"' and t[-1] == '"':
         t = t[1:-1].strip()
@@ -26,6 +39,12 @@ def _normalize_label(s: str) -> str:
 
 
 def _iter_labels_in_cell(val: Any) -> list[str]:
+    """Return a list of label strings from one BGG-style cell.
+
+    Cells in BGG-exported parquets are inconsistent: sometimes a Python list, sometimes a
+    `str(list)` literal that needs `ast.literal_eval`, sometimes a single string, and
+    occasionally a numpy ndarray. NaN / None yield `[]`.
+    """
     if val is None:
         return []
     if isinstance(val, float) and np.isnan(val):
@@ -56,6 +75,7 @@ def first_category_label(val: Any) -> str:
 
 
 def _unique_sorted_from_column(df: pd.DataFrame | None, col: str) -> list[str]:
+    """Collect every label across one BGG-style column, dedupe, sort case-insensitively."""
     if df is None or col not in df.columns:
         return []
     seen: set[str] = set()
@@ -67,6 +87,11 @@ def _unique_sorted_from_column(df: pd.DataFrame | None, col: str) -> list[str]:
 
 
 def load_category_options() -> list[str]:
+    """Return the sorted category labels for the categories chip step.
+
+    Preference order: explicit `categories.json` in the bundle, then unique values from
+    the bundle parquet's `boardgamecategory` column, then a small hardcoded default list.
+    """
     bundle = Path(settings.MODEL_BUNDLE_PATH).resolve() / settings.MODEL_VERSION
     jp = bundle / "categories.json"
     if jp.is_file():
@@ -87,6 +112,7 @@ def load_category_options() -> list[str]:
 
 
 def load_mechanic_options() -> list[str]:
+    """Return the sorted mechanic labels (parquet `boardgamemechanic` column → hardcoded fallback)."""
     from app.recommenders.registry import registry
 
     df = getattr(registry.recommender, "games_meta", None)

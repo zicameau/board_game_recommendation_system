@@ -1,4 +1,12 @@
-"""Declarative base and naming conventions (§4.4)."""
+"""SQLAlchemy `Base` with explicit constraint naming.
+
+Alembic compares constraint names when autogenerating migrations; without a stable naming
+convention every autogen run wants to rename indexes and FKs. The convention here matches
+what's already in the migrations folder, so `alembic revision --autogenerate` produces
+clean diffs.
+
+Every ORM model in `app.db.models` inherits from this `Base`.
+"""
 
 from sqlalchemy import MetaData
 from sqlalchemy.orm import DeclarativeBase
@@ -13,4 +21,6 @@ NAMING_CONVENTION = {
 
 
 class Base(DeclarativeBase):
+    """Declarative base shared by every ORM model in `app.db.models`."""
+
     metadata = MetaData(naming_convention=NAMING_CONVENTION)

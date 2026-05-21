@@ -1,4 +1,12 @@
-"""Base recommender interface — §5.3."""
+"""Abstract base class every recommender implements.
+
+The four required methods are: `load` (classmethod, bundle dir → instance),
+`fit_user_embedding` (signed onboarding labels → user vector), `top_k` (user vector +
+exclude set → ranked (game_idx, score) pairs), and `healthcheck` (registry diagnostics).
+
+`CONTEXT_SCHEMA_VERSION` is the registry-side schema version; bundles whose
+`schema_version` isn't in this set are rejected at load time.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +19,8 @@ CONTEXT_SCHEMA_VERSION = 1
 
 
 class BaseRecommender(ABC):
+    """Plug-in contract for a serving-time recommender."""
+
     model_type: str
     supported_schema_versions: tuple[int, ...]
     version: str

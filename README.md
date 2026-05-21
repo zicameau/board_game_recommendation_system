@@ -2,8 +2,11 @@
 
 FastAPI + Jinja2 SSR, SQLAlchemy, and Alembic — backed by Supabase or local Postgres.
 
+> **New to the codebase?** Start with [`docs/architecture.md`](docs/architecture.md) for a guided tour of how the pieces fit together, *then* come back here for setup.
+
 ## Documentation
 
+- **Architecture** (how the system works — read this first): [`docs/architecture.md`](docs/architecture.md)
 - **Local development** (environment variables, `.env.local`, Git LFS, troubleshooting): [`docs/local-development.md`](docs/local-development.md)
 - **Production deploy** (boardlore.com, DigitalOcean, CI/CD, Docker, Caddy): [`docs/production.md`](docs/production.md)
 - **ERD (v8)**: [`docs/BGG_Recommender_Phased_ERD_v8.docx`](docs/BGG_Recommender_Phased_ERD_v8.docx)
