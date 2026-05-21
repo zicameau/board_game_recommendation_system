@@ -2,16 +2,21 @@
 {% block title %}Seed ratings{% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Seed ratings</h1>
+  <h1>Rate these sample games</h1>
   <p class="muted">
-    Rate each onboarding game (<strong>never played</strong> skips it). The same <strong>10</strong> popular,
-    category-spread titles are shown to everyone for this model version (picked deterministically from
-    <code>games_meta.parquet</code>).
+    This is the most important step — your recommendations are built from these ratings. Below are
+    <strong>10 popular games</strong> spanning a range of styles. For each one you’ve played, pick
+    <strong>Love</strong>, <strong>Like</strong>, <strong>Dislike</strong>, or <strong>Hate</strong>.
+    Leave anything you haven’t played on <strong>Never played</strong> — that just skips it.
+  </p>
+  <p class="muted" style="margin-top:0.5rem">
+    You need <strong>at least one</strong> Love / Like / Dislike / Hate to continue. A handful gives
+    much better picks, so rate everything you recognize.
   </p>
   <form method="post" action="/onboarding/seed_ratings">
     {% if games|length == 0 %}
     <p class="error">
-      Bundle has no games_meta rows — check <code>MODEL_BUNDLE_PATH</code> / <code>MODEL_VERSION</code>.
+      No sample games loaded — the recommender bundle is missing its game catalog. Contact the site admin.
     </p>
     {% endif %}
     {% for g in games %}

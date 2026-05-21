@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import html
 import json
 import re
 from pathlib import Path
@@ -97,8 +98,14 @@ _HTML_TAG = re.compile(r"<[^>]+>")
 
 
 def plain_description(raw: str | None, max_len: int = 480) -> str:
-    """Strip basic HTML from BGG descriptions for safe short display."""
+    """Strip HTML tags AND decode entities from BGG descriptions for safe short display.
+
+    BGG ships descriptions with both real tags (<br/>) and HTML entities (&quot;, &amp;, &#10;).
+    Tags are stripped first; then entities are unescaped so quotes/ampersands/newlines render as
+    real characters; then whitespace is collapsed.
+    """
     t = _HTML_TAG.sub(" ", str(raw or ""))
+    t = html.unescape(t)
     t = re.sub(r"\s+", " ", t).strip()
     if len(t) <= max_len:
         return t

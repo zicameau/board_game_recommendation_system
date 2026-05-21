@@ -3,12 +3,20 @@
 {% block content %}
 <div class="card">
   <h1>Let’s personalize your picks</h1>
-  <p class="muted">Seven quick steps capture how you think about games. Data is stored against your profile for recommendations.</p>
+  <p class="muted">
+    A quick questionnaire to learn what kinds of games you enjoy. Takes about 3–5 minutes. Only the first
+    step (rating a few sample games) is required — everything after that is optional and just sharpens
+    your recommendations. You can come back and reset anytime from the recommendations page.
+  </p>
+  <p class="muted" style="margin-top:0.5rem">Here’s what to expect:</p>
   <ul class="onboarding-steps">
-    <li>Seed ratings on a curated tray</li>
-    <li>Category &amp; mechanic signals</li>
-    <li>Complexity &amp; who you usually play with</li>
-    <li>Quick summary → fit embedding</li>
+    <li><strong>Rate sample games</strong> — score a tray of 10 popular titles so we can place your taste</li>
+    <li><strong>Categories</strong> — broad themes you love or avoid (Strategy, Party, Wargame…)</li>
+    <li><strong>Mechanics</strong> — how games play that you gravitate to (deck building, worker placement…)</li>
+    <li><strong>Complexity</strong> — how heavy you like your games</li>
+    <li><strong>Play context</strong> — who you usually play with</li>
+    <li><strong>Player tag</strong> — optional one-liner about your style</li>
+    <li><strong>Review &amp; finish</strong> — we build your taste profile and show 10 picks</li>
   </ul>
   <form method="get" action="/onboarding/seed_ratings"><button type="submit">Continue</button></form>
 </div>

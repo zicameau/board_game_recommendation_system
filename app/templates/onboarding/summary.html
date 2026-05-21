@@ -3,7 +3,12 @@
 {% block content %}
 <div class="card">
   <h1>Almost there</h1>
-  <p class="muted">Submitting computes your embedding (<code>{{ sel.model_version }}</code>) via the active recommender bundle.</p>
+  <p class="muted">
+    Here’s everything you’ve told us. When you click <strong>Finish</strong>, we’ll combine your seed-game
+    ratings into a taste profile and surface 10 personalized picks on your home page. Want to change
+    anything? Use <strong>Back</strong> to revisit a step. You can also fully reset and start over later
+    from the recommendations page.
+  </p>
   <dl>
     <dt class="muted">Ratings captured</dt>
     <dd>{{ sel.game_ratings|length }}</dd>

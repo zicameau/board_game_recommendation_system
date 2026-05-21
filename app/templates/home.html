@@ -9,8 +9,9 @@
     </form>
   </div>
   <p class="muted">
-    Serving <strong>{{ model_type }}</strong> · bundle <strong>{{ model_version }}</strong>.
-    Match scores are normalized across this list (best = 100% / 10). “Why” lines combine your onboarding picks with game metadata.
+    Your top 10 picks, based on the games you rated during onboarding. The percentages and 10-point
+    scores compare each game against the others on this list — the strongest match is always 100%
+    (10/10), and the rest drop from there. Click any title to open the full game page on BoardGameGeek.
   </p>
   {% if items|length == 0 %}
   <p>No items resolved — extend your bundle parquet or regenerate indices.</p>
@@ -36,7 +37,6 @@
         <div class="rec-card__head">
           <h2 class="rec-card__title">
             <a href="https://boardgamegeek.com/boardgame/{{ it.bgg_id }}" target="_blank" rel="noreferrer">{{ it.title }}</a>
-            <span class="muted rec-card__idx">#{{ it.game_idx }}</span>
           </h2>
           <div class="rec-card__scores" title="Relative match within this top-10 (not an absolute global score)">
             <span class="rec-card__pct">{{ it.match_pct }}%</span>
@@ -50,7 +50,7 @@
         {% endif %}
         <p class="rec-card__why"><span class="rec-card__why-label">Why we think you’ll like it</span> {{ it.why }}</p>
         <p class="rec-card__meta muted">
-          <a href="https://boardgamegeek.com/boardgame/{{ it.bgg_id }}" target="_blank" rel="noreferrer">BGG {{ it.bgg_id }}</a>
+          <a href="https://boardgamegeek.com/boardgame/{{ it.bgg_id }}" target="_blank" rel="noreferrer">View on BoardGameGeek →</a>
         </p>
       </div>
     </article>

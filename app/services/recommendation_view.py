@@ -58,27 +58,25 @@ def explain_recommendation(sel: OnboardingSelection, row: pd.Series) -> str:
 
     parts: list[str] = []
     if hit_cat:
-        parts.append(
-            "Overlaps categories you said you enjoy: " + ", ".join(hit_cat) + "."
-        )
+        parts.append("Matches categories you enjoy: " + ", ".join(hit_cat) + ".")
     if hit_mech:
-        parts.append("Includes mechanics you like: " + ", ".join(hit_mech) + ".")
+        parts.append("Uses mechanics you like: " + ", ".join(hit_mech) + ".")
     if avoid_cat:
         parts.append(
-            "Note: also tagged with categories you tend to avoid ("
+            "Heads up: it’s also tagged with "
             + ", ".join(avoid_cat)
-            + ") — worth a closer look."
+            + ", which you said you’d rather avoid — but it still scored well, so worth a look."
         )
     elif avoid_mech:
         parts.append(
-            "Uses a mechanic you marked as a turn-off ("
+            "It uses "
             + ", ".join(avoid_mech)
-            + ") — you might still enjoy it given the strong model match."
+            + ", which you marked as a turn-off — but it scored highly enough that you might still enjoy it."
         )
 
     if not parts:
         parts.append(
-            "Ranked from your taste embedding: similar vector direction to games you rated positively during onboarding."
+            "Picked because it has a similar feel to the games you rated highest during onboarding."
         )
 
     return " ".join(parts)

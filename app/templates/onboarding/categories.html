@@ -2,8 +2,17 @@
 {% block title %}Categories{% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Categories</h1>
-  <p class="muted">Tap a chip to append that label to the right list (comma-separated). Options come from your model bundle (<code>categories.json</code> or game metadata).</p>
+  <h1>Categories you love (and avoid)</h1>
+  <p class="muted">
+    Categories are the broad themes of a game — like <em>Strategy</em>, <em>Party Game</em>,
+    <em>Wargame</em>, or <em>Family</em>. Tap a green chip to add it to your <strong>liked</strong>
+    list, or a red chip to flag something you’d rather avoid. Picks here nudge recommendations
+    toward (or away from) those themes.
+  </p>
+  <p class="muted" style="margin-top:0.5rem">
+    Both lists are optional — leave them blank if you have no strong preference. You can also type or
+    edit the comma-separated lists directly below the chips.
+  </p>
 
   <h3 class="chip-section-title">Add to <span class="accent">liked</span></h3>
   <div class="chip-wall" aria-label="Liked category suggestions">

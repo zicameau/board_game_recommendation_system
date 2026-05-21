@@ -2,7 +2,17 @@
 {% block title %}Complexity{% endblock %}
 {% block content %}
 <div class="card">
-  <h1>Preferred complexity</h1>
+  <h1>How heavy do you like your games?</h1>
+  <p class="muted">
+    Complexity (sometimes called <em>weight</em>) is how much rules overhead and strategic depth a
+    game has. Pick the level that matches your usual taste — we’ll tilt recommendations that way.
+  </p>
+  <ul class="onboarding-steps" style="margin-top:0.75rem">
+    <li><strong>Light</strong> — quick to teach, easy on the brain. <span class="muted">e.g., Ticket to Ride, Sushi Go, Codenames.</span></li>
+    <li><strong>Medium</strong> — meatier but still approachable in one sitting. <span class="muted">e.g., Catan, Wingspan, 7 Wonders.</span></li>
+    <li><strong>Heavy</strong> — long teach, deep strategy, expect a full evening. <span class="muted">e.g., Twilight Imperium, Brass: Birmingham.</span></li>
+    <li><strong>Varies per night</strong> — you enjoy bouncing between weights depending on the group.</li>
+  </ul>
   <form method="post" action="/onboarding/complexity">
     {% set cur = current or 'medium' %}
     <label class="field" for="complexity_pref">Level</label>

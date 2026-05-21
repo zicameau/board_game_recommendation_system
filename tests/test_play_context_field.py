@@ -3,16 +3,16 @@ from app.services.play_context_field import merge_play_context, split_play_conte
 
 
 def test_split_merge_roundtrip_preset_only():
-    p, d = split_play_context("Solo mainly")
-    assert p == "Solo mainly" and d == ""
-    assert merge_play_context(p, d) == "Solo mainly"
+    p, d = split_play_context("Partner or household")
+    assert p == "Partner or household" and d == ""
+    assert merge_play_context(p, d) == "Partner or household"
 
 
 def test_split_merge_preset_and_detail():
-    combined = merge_play_context("Solo mainly", "evenings")
-    assert combined == "Solo mainly · evenings"
+    combined = merge_play_context("Partner or household", "evenings")
+    assert combined == "Partner or household · evenings"
     p, d = split_play_context(combined)
-    assert p == "Solo mainly" and d == "evenings"
+    assert p == "Partner or household" and d == "evenings"
 
 
 def test_merge_other_only_detail():

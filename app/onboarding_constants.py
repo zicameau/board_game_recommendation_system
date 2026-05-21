@@ -12,7 +12,6 @@ PLAY_CONTEXT_DETAIL_SEPARATOR = " · "
 PLAY_CONTEXT_OTHER_VALUE = "__OTHER__"
 
 PLAY_CONTEXT_MAIN_OPTIONS: list[str] = [
-    "Solo mainly",
     "Partner or household",
     "Small group (regulars)",
     "Large group (5+)",
