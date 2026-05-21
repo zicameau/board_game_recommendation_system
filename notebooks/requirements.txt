@@ -1,0 +1,26 @@
+# Dependencies for the training notebook (bgg_phase1_trevor_v2_2_fixed.ipynb).
+# These are NOT needed to serve the recommender — the runtime is numpy-only
+# (see ../requirements.txt). PyTorch is only used during training.
+#
+# Designed for Google Colab with a T4 (or better) GPU. CPU training is
+# technically possible but takes hours.
+#
+# Install (local):
+#     pip install -r notebooks/requirements.txt
+#
+# In Colab, the notebook installs these itself via `!pip install` in cell 1.
+
+# --- Data download ---
+kaggle>=1.6.0          # downloads jvanelteren/boardgamegeek-reviews
+
+# --- Data handling ---
+numpy>=1.26.0
+pandas>=2.2.0
+pyarrow>=18.0.0        # for writing games_meta.parquet
+
+# --- Models ---
+scikit-learn>=1.5.0    # TF-IDF content-based baseline
+torch>=2.3.0           # Two-Tower neural network
+
+# --- UX ---
+tqdm>=4.66.0           # progress bars during training / evaluation

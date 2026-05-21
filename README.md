@@ -1,22 +1,36 @@
-# BGG Recommendation System (Phase 1)
+# BGG Recommendation System
 
-FastAPI + Jinja2 SSR, SQLAlchemy, and Alembic — backed by Supabase or local Postgres.
+A board-game recommender for BoardGameGeek users. FastAPI + Jinja2 SSR + SQLAlchemy + Alembic, backed by Supabase or local Postgres, serving a two-tower retrieval model from a versioned on-disk bundle. Live demo: [boardlore.com](https://boardlore.com).
 
 > **New to the codebase?** Start with [`docs/architecture.md`](docs/architecture.md) for a guided tour of how the pieces fit together, *then* come back here for setup.
+
+## Team
+
+- **Trevor** — Web app, deployment & evaluation harness
+- **Brandon** — Matrix factorization & neural collaborative filtering
+- **Alexander** — Hyperparameter tuning & evaluation methodology
+
+See [`docs/architecture.md`](docs/architecture.md) for a full breakdown of contributions.
+
+## Dataset
+
+[BoardGameGeek Reviews on Kaggle](https://www.kaggle.com/datasets/jvanelteren/boardgamegeek-reviews) (`jvanelteren/boardgamegeek-reviews`). The training notebook downloads it via the Kaggle API — a Kaggle account and `kaggle.json` API token are required. The raw CSVs are not committed to this repo (they are well over 100 MB); only the model artifacts produced from them live under [`bundles/`](bundles).
 
 ## Documentation
 
 - **Architecture** (how the system works — read this first): [`docs/architecture.md`](docs/architecture.md)
 - **Local development** (environment variables, `.env.local`, Git LFS, troubleshooting): [`docs/local-development.md`](docs/local-development.md)
 - **Production deploy** (boardlore.com, DigitalOcean, CI/CD, Docker, Caddy): [`docs/production.md`](docs/production.md)
+- **Training notebooks** (Colab notebook that produced the two-tower bundle): [`notebooks/README.md`](notebooks/README.md)
 - **ERD (v8)**: [`docs/BGG_Recommender_Phased_ERD_v8.docx`](docs/BGG_Recommender_Phased_ERD_v8.docx)
 
 ## Prerequisites
 
 - Python 3.11+
 - Postgres (Docker recommended)
+- Git LFS (`git lfs install && git lfs pull`) — the model bundle's `.npy` and `.parquet` files are stored via LFS
 
-## Quick Start (Docker Postgres)
+## How to Run
 
 1. Start Postgres:
 
@@ -34,13 +48,19 @@ FastAPI + Jinja2 SSR, SQLAlchemy, and Alembic — backed by Supabase or local Po
 
    Default credentials: user `bgg`, password `bgg`, database `bgg_dev`.
 
-3. Install dependencies, run migrations, and start the app:
+3. Install dependencies (use `requirements.txt` for plain pip, or `pip install -e ".[dev]"` to install in editable mode), run migrations, and start the app:
 
    ```powershell
-   pip install -e ".[dev]"
+   pip install -r requirements.txt
    alembic upgrade head
    uvicorn app.main:app --reload
    ```
+
+   Open [http://127.0.0.1:8000](http://127.0.0.1:8000) and sign up — or set `AUTH_MODE=dev_shim` in `.env.local` and visit `http://127.0.0.1:8000/onboarding/welcome?dev_user=you` to skip Supabase entirely.
+
+### Re-train the two-tower model
+
+The serving path reads precomputed artifacts from `bundles/<MODEL_VERSION>/`. To retrain from scratch, open [`notebooks/bgg_phase1_trevor_v2_2_fixed.ipynb`](notebooks/bgg_phase1_trevor_v2_2_fixed.ipynb) in Google Colab (T4 GPU recommended) and run all cells. Training dependencies live in [`notebooks/requirements.txt`](notebooks/requirements.txt). See [`notebooks/README.md`](notebooks/README.md) for the export-to-bundle mapping.
 
 ## Supabase
 
