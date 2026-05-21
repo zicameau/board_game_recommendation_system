@@ -106,6 +106,9 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: BGG_REC_IMAGE,GHCR_USER,GHCR_TOKEN,CADDY_EMAIL
+          # Default is 10m; the GHCR pull of the bundle-bearing image alone can take most of
+          # that on the small DigitalOcean droplet, leaving no headroom for migrate + restart.
+          command_timeout: 30m
           script: |
             set -euo pipefail
             export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
