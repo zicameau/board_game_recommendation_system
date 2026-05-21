@@ -1,0 +1,18 @@
+,value
+Raw reviews,"18,964,728"
+Raw users,"412,815"
+Raw games,"21,839"
+Filtered reviews,"18,716,519"
+Filtered users,"272,319"
+Filtered games,"21,802"
+Filter survival (rows),98.69%
+Filter survival (users),65.97%
+Filter survival (games),99.83%
+Global mean rating (filt.),7.063
+Global std rating (filt.),1.586
+Median ratings/user (filt.),29
+Median ratings/game (filt.),120
+Sparsity (filtered),99.6848%
+Train rows,"18,171,881"
+Val rows,"272,319"
+Test rows,"272,319"
