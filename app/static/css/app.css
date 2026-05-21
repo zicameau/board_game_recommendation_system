@@ -283,17 +283,31 @@ label.field {
 }
 
 .card--flush > h1,
-.card--flush > .muted {
+.card--flush > .muted,
+.card--flush > .page-header {
   padding-left: 1.5rem;
   padding-right: 1.5rem;
 }
 
-.card--flush > h1 {
+.card--flush > h1,
+.card--flush > .page-header {
   padding-top: 1.5rem;
 }
 
 .card--flush > p.muted:last-of-type {
   padding-bottom: 0.5rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.page-header > h1 {
+  margin: 0;
 }
 
 .rec-list {

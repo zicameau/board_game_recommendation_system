@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import secrets
 import uuid
 from typing import Annotated
 
@@ -16,7 +17,6 @@ from app.auth.deps import (
     ProfileUsernameUnavailableError,
     ensure_profile,
     is_profile_username_in_use,
-    resolve_login_email,
 )
 from app.auth.supabase_jwt import decode_access_token
 from app.auth.supabase_client import (
@@ -127,23 +127,11 @@ def login_form(
 @router.post("/login")
 def login_post(
     request: Request,
-    identifier: Annotated[str, Form()],
+    email: Annotated[str, Form()],
     password: Annotated[str, Form()],
     db: Session = Depends(get_db),
 ):
-    email, _prof = resolve_login_email(db, identifier)
-    if not email:
-        return request.app.state.templates.TemplateResponse(
-            request,
-            "auth/login.html",
-            {
-                "request": request,
-                "error": "Unknown username/email.",
-                "viewer": None,
-                "dev_shim": settings.AUTH_MODE == "dev_shim",
-            },
-            status_code=400,
-        )
+    email = email.strip().lower()
     try:
         data = sign_in_password(email, password)
     except Exception as e:
@@ -176,7 +164,7 @@ def login_post(
         )
     uid = uuid.UUID(str(ub["id"]))
     md = ub.get("user_metadata") or {}
-    username = md.get("username") or identifier.split("@")[0]
+    username = md.get("username") or email.split("@")[0]
     meta_email = ub.get("email") or email
     try:
         profile = ensure_profile(db, uid, meta_email, str(username))
@@ -218,10 +206,18 @@ def register_form(request: Request):
     )
 
 
+def _derive_username_from_email(db: Session, email: str) -> str:
+    """Derive a unique, NOT-NULL username from the email's local part for `profiles.username`."""
+    base = (email.split("@")[0] or "user")[:64]
+    if not is_profile_username_in_use(db, base):
+        return base
+    suffix = secrets.token_hex(3)
+    return f"{base[: 64 - 1 - len(suffix)]}_{suffix}"
+
+
 @router.post("/register")
 def register_post(
     request: Request,
-    username: Annotated[str, Form()],
     email: Annotated[str, Form()],
     password: Annotated[str, Form()],
     db: Session = Depends(get_db),
@@ -243,22 +239,8 @@ def register_post(
             },
             status_code=400,
         )
-    if is_profile_username_in_use(db, username):
-        return request.app.state.templates.TemplateResponse(
-            request,
-            "auth/register.html",
-            {
-                "request": request,
-                "error": (
-                    "That username is already taken in this app. "
-                    "Choose a different display name and try again."
-                ),
-                "notice": None,
-                "viewer": None,
-                "dev_shim": False,
-            },
-            status_code=400,
-        )
+    email = email.strip().lower()
+    username = _derive_username_from_email(db, email)
     try:
         data = signup_email_password(email, password, metadata={"username": username})
     except SupabaseAuthError as e:
@@ -304,21 +286,9 @@ def register_post(
         try:
             ensure_profile(db, uid_u, email, username)
         except ProfileUsernameUnavailableError:
-            return request.app.state.templates.TemplateResponse(
-                request,
-                "auth/register.html",
-                {
-                    "request": request,
-                "error": (
-                    "Display name conflict — that name was taken while you signed up. "
-                    "Pick a different username and try registering again, or contact support."
-                ),
-                    "notice": None,
-                    "viewer": None,
-                    "dev_shim": False,
-                },
-                status_code=400,
-            )
+            base = username[:55]
+            fallback = f"{base}_{uid_u.hex[:8]}"
+            ensure_profile(db, uid_u, email, fallback)
         resp = RedirectResponse("/onboarding/welcome", status_code=303)
         set_auth_cookies(resp, access, refresh, max_age_access=int(sess.get("expires_in") or 3600))
         return resp

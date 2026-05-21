@@ -24,6 +24,19 @@ _PKG = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(_PKG / "templates"))
 
 
+def static_url(path: str) -> str:
+    """Versioned static URL — appends ?v=<mtime> so browsers refetch when assets change."""
+    full = _PKG / "static" / path.lstrip("/")
+    try:
+        mtime = int(full.stat().st_mtime)
+    except OSError:
+        mtime = 0
+    return f"/static/{path.lstrip('/')}?v={mtime}"
+
+
+templates.env.globals["static_url"] = static_url
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     registry.load_active()

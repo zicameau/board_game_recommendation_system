@@ -6,13 +6,13 @@
   {% if dev_shim %}
   <p class="flash">Dev shim: password login is for <strong>AUTH_MODE=supabase</strong>. Locally use <a href="/onboarding/welcome?dev_user=you">onboarding (?dev_user=)</a>; the name persists in session.</p>
   {% endif %}
-  <p class="muted">Use your username or email and password.</p>
+  <p class="muted">Use your email and password.</p>
   {% if error %}
   <p class="error">{{ error }}</p>
   {% endif %}
   <form method="post" action="/login">
-    <label class="field" for="identifier">Username or email</label>
-    <input id="identifier" name="identifier" type="text" autocomplete="username" required />
+    <label class="field" for="email">Email</label>
+    <input id="email" name="email" type="email" autocomplete="email" required />
     <label class="field" for="password">Password</label>
     <input id="password" name="password" type="password" autocomplete="current-password" required />
     <p style="margin-top:1.25rem">

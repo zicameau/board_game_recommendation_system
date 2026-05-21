@@ -299,3 +299,23 @@ def complete_post(
     db.add(sel)
     db.commit()
     return RedirectResponse("/home", status_code=303)
+
+
+@router.post("/reset")
+def reset_post(
+    user: DependsLogin,
+    db: Session = Depends(get_db),
+):
+    """Hard reset: drop the user's embedding, onboarding selections, and completion timestamp."""
+    emb = db.get(UserEmbedding, user.id)
+    if emb is not None:
+        db.delete(emb)
+
+    sel = db.get(OnboardingSelection, user.id)
+    if sel is not None:
+        db.delete(sel)
+
+    user.onboarding_completed_at = None
+    db.add(user)
+    db.commit()
+    return RedirectResponse("/onboarding/welcome", status_code=303)

@@ -24,7 +24,6 @@ def test_login_post_attaches_auth_cookies_to_redirect_response():
                 "user": {"id": str(uid), "email": "u@test.com"},
             }
         ),
-        resolve_login_email=MagicMock(return_value=("u@test.com", None)),
         ensure_profile=MagicMock(
             return_value=SimpleNamespace(onboarding_completed_at=None)
         ),
@@ -32,7 +31,7 @@ def test_login_post_attaches_auth_cookies_to_redirect_response():
         with TestClient(app) as client:
             r = client.post(
                 "/login",
-                data={"identifier": "u@test.com", "password": "pw"},
+                data={"email": "u@test.com", "password": "pw"},
                 follow_redirects=False,
             )
     assert r.status_code == 303
